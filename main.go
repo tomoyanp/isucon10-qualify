@@ -842,12 +842,13 @@ func searchRecommendedEstateWithChair(c echo.Context) error {
 	w := chair.Width
 	h := chair.Height
 	d := chair.Depth
-	query = `SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
-			 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
-			 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
-			 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
-			 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
-			 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?) ORDER BY popularity DESC, id ASC LIMIT ?`
+	query = `SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?) OR (door_width >= ? AND door_height >= ?) OR (door_width >= ? AND door_height >= ?) OR (door_width >= ? AND door_height >= ?) OR (door_width >= ? AND door_height >= ?) OR (door_width >= ? AND door_height >= ?) ORDER BY popularity DESC, id ASC LIMIT ?`
+	// query = `SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
+	// 		 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
+	// 		 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
+	// 		 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
+	// 		 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?)
+	// 		 UNION SELECT * FROM estate WHERE (door_width >= ? AND door_height >= ?) ORDER BY popularity DESC, id ASC LIMIT ?`
 	err = db.Select(&estates, query, w, h, w, d, h, w, h, d, d, w, d, h, Limit)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -873,7 +874,8 @@ func searchEstateNazotte(c echo.Context) error {
 	}
 
 	b := coordinates.getBoundingBox()
-	query := fmt.Sprintf(`SELECT * FROM estate WHERE latitude >= ? AND longitude >= ? AND longitude >= ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(concat('POINT(', latitude, ' ', longitude, ')'))) ORDER BY popularity DESC, id ASC`, coordinates.coordinatesToText())
+	query := fmt.Sprintf(`SELECT * FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(concat('POINT(', latitude, ' ', longitude, ')'))) ORDER BY popularity DESC, id ASC`, coordinates.coordinatesToText())
+	c.Echo().Logger.Infof("query = ", query)
 	estatesInPolygon := []Estate{}
 	err = db.Select(&estatesInPolygon, query, b.BottomRightCorner.Latitude, b.TopLeftCorner.Latitude, b.BottomRightCorner.Longitude, b.TopLeftCorner.Longitude)
 	if err == sql.ErrNoRows {
