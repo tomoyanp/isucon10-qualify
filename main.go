@@ -367,7 +367,7 @@ func postChair(c echo.Context) error {
 	defer tx.Rollback()
 
 	recordsLength := len(records)
-	query := "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) "
+	query := "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES"
 	for index, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -388,9 +388,9 @@ func postChair(c echo.Context) error {
 			return c.NoContent(http.StatusBadRequest)
 		}
 		if index == (recordsLength - 1) {
-			query += fmt.Sprintf("VALUES(%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v);", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
+			query += fmt.Sprintf("(%v,'%v','%v','%v',%v,%v,%v,%v,'%v','%v','%v',%v,%v);", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
 		} else {
-			query += fmt.Sprintf("VALUES(%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v),", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
+			query += fmt.Sprintf("(%v,'%v','%v','%v',%v,%v,%v,%v,'%v','%v','%v',%v,%v),", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
 		}
 		// TODO Insertを一発にしても良い
 		// _, err := tx.Exec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
@@ -400,6 +400,7 @@ func postChair(c echo.Context) error {
 		// }
 	}
 
+	c.Logger().Errorf("aaaaaaaaaaaaaaaaaaaaaaaaa: %v", query)
 	_, sqlError := tx.Exec(query)
 	if sqlError != nil {
 		c.Logger().Errorf("failed to insert chair: %v", err)
