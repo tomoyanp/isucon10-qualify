@@ -365,7 +365,10 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
-	for _, row := range records {
+
+	recordsLength := len(records)
+	query := "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) "
+	for index, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
 		name := rm.NextString()
@@ -384,13 +387,25 @@ func postChair(c echo.Context) error {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		// TODO Insertを一発にしても良い
-		_, err := tx.Exec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
-		if err != nil {
-			c.Logger().Errorf("failed to insert chair: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
+		if index == (recordsLength - 1) {
+			query += fmt.Sprintf("VALUES(%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v);", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
+		} else {
+			query += fmt.Sprintf("VALUES(%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v),", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
 		}
+		// TODO Insertを一発にしても良い
+		// _, err := tx.Exec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
+		// if err != nil {
+		// 	c.Logger().Errorf("failed to insert chair: %v", err)
+		// 	return c.NoContent(http.StatusInternalServerError)
+		// }
 	}
+
+	_, sqlError := tx.Exec(query)
+	if sqlError != nil {
+		c.Logger().Errorf("failed to insert chair: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
